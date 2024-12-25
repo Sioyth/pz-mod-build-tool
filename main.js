@@ -41,10 +41,17 @@ function build() {
     dir_entries = dir_entries.filter(filterNonHiddenFolders)
 
     console.log("Copying files")
-    for (const dir_entry of dir_entries) {
-        const entry_path = path.join(dir_entry.parentPath, dir_entry.name);
-        const destination_path = entry_path.substring(entry_path.indexOf(PZ_MOD_NAME) + PZ_MOD_NAME.length);
-        fs.copyFileSync(entry_path, destination_path);
+    for (const entry of dir_entries) {
+        const entry_path = path.join(entry.parentPath, entry.name);
+        const relative_path = entry_path.substring(entry_path.indexOf(PZ_MOD_NAME) + PZ_MOD_NAME.length);
+        const destination_path = path.join(mods_dir, relative_path);
+
+
+        if(entry.isDirectory())
+            if(!fs.existsSync(destination_path))
+                fs.mkdirSync(destination_path)
+        else
+            fs.copyFileSync(entry_path, destination_path);
     }
 }
 
