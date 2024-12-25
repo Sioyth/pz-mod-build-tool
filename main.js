@@ -47,9 +47,8 @@ function build() {
         const destination_path = path.join(mods_dir, relative_path);
 
 
-        if(entry.isDirectory())
-            if(!fs.existsSync(destination_path))
-                fs.mkdirSync(destination_path)
+        if(entry.isDirectory() && !fs.existsSync(destination_path))
+            fs.mkdirSync(destination_path)
         else
             fs.copyFileSync(entry_path, destination_path);
     }
