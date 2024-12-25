@@ -1,31 +1,25 @@
 const fs = require('fs');
 const path = require('path');
 
-const PZ_PROJECT_PATH = process.argv[2];
+const PZ_PROJECT_DIR = process.argv[2];
+console.assert(PZ_PROJECT_DIR, "Project Dir Macro was not set up!")
 
-console.assert(!PZ_PROJECT_PATH, "Project Dir Macro was not passed!")
+const PZ_MOD_NAME = path.basename(PZ_PROJECT_DIR)
+const PZ_WORKSHOP_DIR = path.join(PZ_PROJECT_DIR, "../../Workshop");
+const PZ_WORKSHOP_ROOT_MOD_DIR = path.join(PZ_WORKSHOP_DIR, PZ_MOD_NAME);
 
-const PZ_MOD_NAME = path.basename(PZ_PROJECT_PATH)
-const PZ_WORKSHOP_PATH = path.join(PZ_PROJECT_PATH, "../../Workshop");
-
-const PZ_WORKSHOP_MOD_PATH = path.join(PZ_WORKSHOP_PATH, PZ_MOD_NAME);
-
-console.log(`Project Path = ${PZ_PROJECT_PATH}`)
-console.log(`Workshop Path = ${PZ_WORKSHOP_PATH}`)
-console.log(`Mod Path = ${PZ_MOD_NAME}`)
-
-let filterNonHiddenFolders = (dir_entry) => !/(^|\/)\.[^\/.]/.test(path.join(dir_entry.parentPath, dir_entry.name))
+const filterNonHiddenFolders = (dir_entry) => !/(^|\/)\.[^\/.]/.test(path.join(dir_entry.parentPath, dir_entry.name))
 
 build();
 
 function build() {
-    console.assert(fs.existsSync(PZ_WORKSHOP_PATH), "Project Zomboid Workshop path not found");
+    console.assert(fs.existsSync(PZ_WORKSHOP_DIR), "Project Zomboid Workshop path not found");
 
     console.log("Creating Project Zomboid Mod Structure")
-    if(!fs.existsSync(PZ_WORKSHOP_MOD_PATH))
-        fs.mkdirSync(PZ_WORKSHOP_MOD_PATH)
+    if(!fs.existsSync(PZ_WORKSHOP_ROOT_MOD_DIR))
+        fs.mkdirSync(PZ_WORKSHOP_ROOT_MOD_DIR)
 
-    const contents_dir = path.join(PZ_WORKSHOP_MOD_PATH, "Contents");
+    const contents_dir = path.join(PZ_WORKSHOP_ROOT_MOD_DIR, "Contents");
     if(!fs.existsSync(contents_dir))
         fs.mkdirSync(contents_dir)
 
@@ -37,7 +31,7 @@ function build() {
     if(!fs.existsSync(mod_dir))
         fs.mkdirSync(mod_dir)
 
-    let dir_entries = fs.readdirSync(PZ_PROJECT_PATH, {withFileTypes:true, recursive: true});
+    let dir_entries = fs.readdirSync(PZ_PROJECT_DIR, {withFileTypes:true, recursive: true});
     dir_entries = dir_entries.filter(filterNonHiddenFolders)
 
     console.log("Copying files")
@@ -46,11 +40,10 @@ function build() {
         const relative_path = entry_path.substring(entry_path.indexOf(PZ_MOD_NAME) + PZ_MOD_NAME.length);
         const destination_path = path.join(mods_dir, relative_path);
 
-
-        if(entry.isDirectory() && !fs.existsSync(destination_path))
-            fs.mkdirSync(destination_path)
-        else
+        if(!entry.isDirectory())
             fs.copyFileSync(entry_path, destination_path);
+        else if(!fs.existsSync(destination_path))
+            fs.mkdirSync(destination_path)
     }
 }
 
