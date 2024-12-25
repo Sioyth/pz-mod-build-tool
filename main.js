@@ -5,46 +5,66 @@ const PZ_PROJECT_DIR = process.argv[2];
 console.assert(PZ_PROJECT_DIR, "Project Dir Macro was not set up!")
 
 const PZ_MOD_NAME = path.basename(PZ_PROJECT_DIR)
-const PZ_WORKSHOP_DIR = path.join(PZ_PROJECT_DIR, "../../Workshop");
-const PZ_WORKSHOP_ROOT_MOD_DIR = path.join(PZ_WORKSHOP_DIR, PZ_MOD_NAME);
-
-const filterNonHiddenFolders = (dir_entry) => !/(^|\/)\.[^\/.]/.test(path.join(dir_entry.parentPath, dir_entry.name))
+const PZ_MOD_WORKSHOP_DIR = path.join(PZ_PROJECT_DIR, "../../Workshop", PZ_MOD_NAME, "Contents", "mods", PZ_MOD_NAME);
 
 build();
 
-function build() {
-    console.assert(fs.existsSync(PZ_WORKSHOP_DIR), "Project Zomboid Workshop path not found");
+async function build() {
+    await createModStructure();
+    await copyFiles();
+}
 
+async function createModStructure() {
     console.log("Creating Project Zomboid Mod Structure")
-    if(!fs.existsSync(PZ_WORKSHOP_ROOT_MOD_DIR))
-        fs.mkdirSync(PZ_WORKSHOP_ROOT_MOD_DIR)
+    await fs.access(PZ_MOD_WORKSHOP_DIR, (e) => {
+        if(e && e.code === "ENOENT")
+            fs.mkdir(PZ_MOD_WORKSHOP_DIR, {recursive: true}, (e) => {
+                if(e)
+                    console.error(e);
+            })
+    })
+}
 
-    const contents_dir = path.join(PZ_WORKSHOP_ROOT_MOD_DIR, "Contents");
-    if(!fs.existsSync(contents_dir))
-        fs.mkdirSync(contents_dir)
-
-    const mods_dir = path.join(contents_dir, "mods");
-    if(!fs.existsSync(mods_dir))
-        fs.mkdirSync(mods_dir)
-
-    const mod_dir = path.join(mods_dir, PZ_MOD_NAME);
-    if(!fs.existsSync(mod_dir))
-        fs.mkdirSync(mod_dir)
-
-    let dir_entries = fs.readdirSync(PZ_PROJECT_DIR, {withFileTypes:true, recursive: true});
+async function copyFiles() {
+    let dir_entries = fs.readdirSync(PZ_PROJECT_DIR, {withFileTypes: true, recursive: true});
     dir_entries = dir_entries.filter(filterNonHiddenFolders)
 
     console.log("Copying files")
     for (const entry of dir_entries) {
         const entry_path = path.join(entry.parentPath, entry.name);
         const relative_path = entry_path.substring(entry_path.indexOf(PZ_MOD_NAME) + PZ_MOD_NAME.length);
-        const destination_path = path.join(mods_dir, relative_path);
+        const destination_path = path.join(PZ_MOD_WORKSHOP_DIR, relative_path);
 
-        if(!entry.isDirectory())
-            fs.copyFileSync(entry_path, destination_path);
-        else if(!fs.existsSync(destination_path))
-            fs.mkdirSync(destination_path)
+        if (!entry.isDirectory())
+            fs.copyFile(entry_path, destination_path, (e) => {
+                if(e)
+                    console.error(e);
+            });
+        else
+            fs.access(destination_path, (e) => {
+                if(e && e.code === "ENOENT")
+                    fs.mkdir(destination_path, {recursive: true}, (e) => {
+                        if(e)
+                            console.error(e);
+                    })
+            })
     }
+}
+
+function filterNonHiddenFolders(dir_entry) {
+    return !/(^|\/)\.[^\/.]/.test(path.join(dir_entry.parentPath, dir_entry.name))
+}
+
+async function ensureDirectoryExists(destinationPath) {
+    return fs.access(destinationPath, (err) => {
+        if (err && err.code === 'ENOENT')
+            fs.mkdir(destinationPath, { recursive: true }, (mk_dir_error) => {
+                if (mk_dir_error)
+                    console.error(mk_dir_error);
+            });
+        else if (err)
+            console.error(err);
+    });
 }
 
 
