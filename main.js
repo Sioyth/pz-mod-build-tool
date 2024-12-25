@@ -29,6 +29,8 @@ async function copyFiles() {
             const relative_path = entry_path.substring(entry_path.indexOf(PZ_MOD_NAME) + PZ_MOD_NAME.length);
             const destination_path = path.join(PZ_MOD_WORKSHOP_DIR, relative_path);
 
+            logSameLine(`Copying... ${entry.name}`)
+
             if (!entry.isDirectory())
                 fs.copyFile(entry_path, destination_path, (err) => {
                     if(err)
@@ -37,6 +39,8 @@ async function copyFiles() {
             else
                 await ensureDirectoryExists(destination_path)
         }
+
+        process.stdout.clearLine(0);
     });
 }
 
@@ -54,5 +58,12 @@ async function ensureDirectoryExists(destinationPath) {
             console.error(err);
     }
 }
+
+function logSameLine(message) {
+    process.stdout.clearLine(0);
+    process.stdout.cursorTo(0);
+    process.stdout.write(message);
+}
+
 
 
