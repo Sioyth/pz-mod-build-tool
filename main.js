@@ -33,7 +33,7 @@ function build() {
     if(!fs.existsSync(mods_dir))
         fs.mkdirSync(mods_dir)
 
-    const mod_dir = path.join(contents_dir, PZ_MOD_NAME);
+    const mod_dir = path.join(mods_dir, PZ_MOD_NAME);
     if(!fs.existsSync(mod_dir))
         fs.mkdirSync(mod_dir)
 
